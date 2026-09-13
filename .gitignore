@@ -5,7 +5,6 @@
 
 # Production and build outputs
 dist/
-build/
 .next/
 out/
 .vinext/
