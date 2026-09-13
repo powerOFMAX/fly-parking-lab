@@ -1,0 +1,1336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fly Parking Lab — Carla (MaleCNS × NeuroMechFly v2)</title>
+    <style>
+      :root {
+        --fg: #e6e8eb;
+        --muted: #9aa0a6;
+        --accent: #8c9eff;
+        --cyan: #55ddd5;
+        --orange: #ff9e3d;
+        --line: #24303b;
+        --bg-dark: #070b10;
+        --panel-bg: #090e15;
+        --stage-a: #2a2d36;
+        --stage-b: #14161b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100vw;
+        max-width: 100vw;
+        height: 100%;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: var(--fg);
+        background: var(--bg-dark);
+      }
+      #stage {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) 36px;
+        height: 100vh;
+        width: 100vw;
+        max-width: 100vw;
+        overflow: hidden;
+        background: #000;
+      }
+
+      /* TOPBAR */
+      #topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 4px 12px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, #0f1622 0%, #080c12 100%);
+        z-index: 10;
+        min-height: 46px;
+        width: 100%;
+        max-width: 100vw;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+      }
+      #topbar::-webkit-scrollbar {
+        display: none;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex-shrink: 0;
+      }
+      .mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid rgba(85, 221, 213, 0.45);
+        border-radius: 8px;
+        color: var(--cyan);
+        background: radial-gradient(circle at 50% 40%, #0d2830 0%, #07151a 100%);
+        font-weight: 800;
+        font-size: 12px;
+        cursor: default;
+        box-shadow: 0 0 10px rgba(85, 221, 213, 0.2);
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+      }
+      .mark.turbo {
+        border-color: var(--orange);
+        color: var(--orange);
+        background: radial-gradient(circle at 50% 40%, #301a07 0%, #170d04 100%);
+        box-shadow: 0 0 12px rgba(255, 158, 61, 0.35);
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 13.5px;
+        white-space: nowrap;
+        font-weight: 700;
+      }
+      .brand p {
+        margin: 1px 0 0;
+        color: var(--muted);
+        font-size: 9.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .topbar-center {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+        justify-content: center;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+        flex-shrink: 0;
+      }
+      .actions button,
+      .actions select,
+      .topbar-center select {
+        min-height: 28px;
+        height: 28px;
+        border: 1px solid #243242;
+        border-radius: 6px;
+        color: var(--fg);
+        background: #0d1622;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 0 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition:
+          border-color 0.15s,
+          background 0.15s,
+          color 0.15s,
+          box-shadow 0.15s;
+      }
+      #puzzle-select {
+        padding: 0 8px;
+        cursor: pointer;
+        outline: none;
+        background: #0e1724;
+        border-color: #2b3d52;
+        color: var(--cyan);
+        font-weight: 600;
+        max-width: 175px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      .actions button:hover,
+      .actions select:hover,
+      #puzzle-select:hover {
+        border-color: var(--cyan);
+        background: #132232;
+        color: #fff;
+        box-shadow: 0 0 10px rgba(85, 221, 213, 0.15);
+      }
+      .actions button.active-state {
+        border-color: rgba(85, 221, 213, 0.6);
+        background: rgba(85, 221, 213, 0.14);
+        color: #55ddd5;
+      }
+
+      /* Speed Buttons */
+      .speed-group {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #283745;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #0b1118;
+        flex-shrink: 0;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+      }
+      .speed-btn {
+        border: 0 !important;
+        border-radius: 0 !important;
+        padding: 0 8px !important;
+        min-height: 28px;
+        height: 28px;
+        font-size: 10.5px !important;
+        font-weight: 700 !important;
+        color: #8fa0ab !important;
+        background: transparent !important;
+        cursor: pointer;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        user-select: none;
+      }
+      .speed-btn:hover {
+        color: #fff !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+      .speed-btn.active {
+        background: var(--cyan) !important;
+        color: #070b10 !important;
+        box-shadow: 0 0 10px rgba(85, 221, 213, 0.35);
+      }
+      .speed-btn.turbo.active {
+        background: var(--orange) !important;
+        color: #070b10 !important;
+        box-shadow: 0 0 10px rgba(255, 158, 61, 0.4);
+      }
+
+      /* Batch Group & Sandbox Training Controls */
+      .batch-group {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid rgba(234, 88, 12, 0.6);
+        border-radius: 6px;
+        overflow: hidden;
+        background: #140d07;
+        flex-shrink: 0;
+      }
+      .batch-group select {
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        color: #fdba74 !important;
+        font-size: 10.5px !important;
+        font-weight: 700 !important;
+        padding: 0 5px !important;
+        min-height: 28px;
+        height: 28px;
+        cursor: pointer;
+        outline: none;
+      }
+      .batch-btn {
+        border: 0 !important;
+        border-left: 1px solid rgba(234, 88, 12, 0.4) !important;
+        border-radius: 0 !important;
+        padding: 0 8px !important;
+        min-height: 28px;
+        height: 28px;
+        font-size: 10.5px !important;
+        font-weight: 700 !important;
+        color: #070b10 !important;
+        background: var(--orange) !important;
+        cursor: pointer;
+        white-space: nowrap !important;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+      }
+      .batch-btn:hover {
+        background: #ffb45e !important;
+        box-shadow: 0 0 12px rgba(255, 158, 61, 0.45);
+      }
+      .batch-btn.running {
+        background: #ef4444 !important;
+        color: #fff !important;
+      }
+      .batch-hud {
+        display: grid;
+        gap: 4px;
+        padding: 6px 9px;
+        border: 1px solid rgba(255, 158, 61, 0.4);
+        border-radius: 7px;
+        background: rgba(28, 16, 6, 0.75);
+        font-size: 11px;
+        transition: all 0.2s ease;
+      }
+      .batch-hud.hidden {
+        display: none;
+      }
+      .batch-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #e2e8f0;
+        font-size: 11px;
+      }
+      .batch-row strong {
+        color: var(--orange);
+        font-size: 12px;
+      }
+      .batch-status-text {
+        font-size: 10px;
+        color: var(--cyan);
+        font-weight: 600;
+      }
+      .batch-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #cbd5e1;
+        font-size: 10px;
+        cursor: pointer;
+        user-select: none;
+        margin-top: 1px;
+      }
+      .batch-checkbox input {
+        accent-color: var(--orange);
+        cursor: pointer;
+      }
+
+      /* WORKSPACE: LEFT ARENA + RIGHT SIDEBAR (BRAIN 3D & COCKPIT) */
+      #workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) clamp(270px, 25vw, 340px);
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        max-width: 100vw;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      .panel {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        background: var(--panel-bg);
+      }
+      #game-panel {
+        position: relative;
+        border-right: 1px solid var(--line);
+        min-width: 0;
+        min-height: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      #side-panel {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        min-width: 0;
+        min-height: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      #brain-panel {
+        display: grid;
+        grid-template-rows: 34px minmax(80px, 1fr) auto;
+        border-bottom: 1px solid var(--line);
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background: #04070b;
+      }
+      #body-panel {
+        display: grid;
+        grid-template-rows: 34px minmax(80px, 1fr) auto;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background: #04070b;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 10px;
+        border-bottom: 1px solid var(--line);
+        background: #080d13;
+        min-height: 34px;
+      }
+      .panel-head h2 {
+        margin: 0;
+        font-size: 12.5px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+      .live {
+        color: var(--cyan);
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .live:before {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 8px var(--cyan);
+        content: '';
+      }
+      .live.pulse:before {
+        animation: livePulse 1.2s infinite ease-in-out;
+      }
+      @keyframes livePulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.4);
+          opacity: 0.6;
+        }
+      }
+
+      /* Views */
+      #game-view {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #202933;
+      }
+      #game-view canvas,
+      #body-view canvas,
+      #brain-view canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #body-view {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        background: radial-gradient(circle at 45% 45%, #26323d, #080c11 72%);
+      }
+      #brain-view {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 45%, #18222d, #06090e 78%);
+      }
+
+      .body-label {
+        position: absolute;
+        z-index: 3;
+        left: 10px;
+        bottom: 8px;
+        padding: 4px 7px;
+        border-radius: 6px;
+        color: #9aabb2;
+        background: rgba(0, 0, 0, 0.6);
+        font-size: 9px;
+        pointer-events: none;
+        letter-spacing: 0.02em;
+      }
+
+      /* Brain Hover Card */
+      .brain-hover-card {
+        position: absolute;
+        z-index: 4;
+        top: 10px;
+        left: 10px;
+        max-width: 220px;
+        padding: 8px 10px;
+        border: 1px solid rgba(85, 221, 213, 0.3);
+        border-radius: 8px;
+        background: rgba(7, 13, 19, 0.88);
+        backdrop-filter: blur(8px);
+        pointer-events: none;
+        font-size: 11px;
+        transition: opacity 0.15s;
+      }
+      .brain-hover-card.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .brain-hover-card strong {
+        display: block;
+        color: var(--cyan);
+        font-size: 12px;
+      }
+      .brain-hover-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        margin-top: 1px;
+      }
+      .brain-hover-card p {
+        margin: 4px 0 0;
+        color: #ccd6db;
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+
+      /* Brain Footer & Learning stats */
+      #brain-footer {
+        display: grid;
+        gap: 5px;
+        padding: 8px 10px;
+        border-top: 1px solid var(--line);
+        background: #080e15;
+      }
+      .brain-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        border: 1px solid rgba(218, 238, 239, 0.14);
+        border-radius: 6px;
+        padding: 4px 6px;
+        background: rgba(7, 13, 19, 0.6);
+        text-align: center;
+      }
+      .bm-stat span {
+        display: block;
+        color: var(--muted);
+        font-size: 8.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .bm-stat b {
+        display: block;
+        margin-top: 1px;
+        color: #fff;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Neural Activity & Bars */
+      #neural-activity {
+        display: grid;
+        gap: 5px;
+      }
+      #neural-activity > strong {
+        display: block;
+        color: var(--cyan);
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .neuron {
+        display: grid;
+        grid-template-columns: 58px 1fr 34px;
+        align-items: center;
+        gap: 6px;
+        color: #b9c7cb;
+        font-size: 11px;
+      }
+      .neuron i {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 9px;
+        background: #1d2731;
+      }
+      .neuron b {
+        display: block;
+        width: 0;
+        height: 100%;
+        background: linear-gradient(90deg, var(--orange), #ffd07a);
+        transition: width 0.08s linear;
+      }
+      .neuron output {
+        color: #ffb45e;
+        font:
+          10.5px ui-monospace,
+          monospace;
+        text-align: right;
+      }
+      .neuron.firing span {
+        color: #fff;
+        text-shadow: 0 0 8px var(--orange);
+      }
+
+      .brain-actions {
+        display: flex;
+        gap: 4px;
+      }
+      .brain-actions button {
+        flex: 1;
+        min-height: 26px;
+        border: 1px solid #34414d;
+        border-radius: 5px;
+        color: var(--fg);
+        background: #111a24;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 0 4px;
+        cursor: pointer;
+        transition: all 0.12s;
+        white-space: nowrap;
+      }
+      .brain-actions button:hover {
+        border-color: var(--cyan);
+        background: #162a34;
+        color: #fff;
+      }
+
+      /* Center Game Overlays */
+      .mission {
+        position: absolute;
+        z-index: 4;
+        top: 12px;
+        left: 12px;
+        width: min(320px, calc(100% - 24px));
+        padding: 10px 12px;
+        border: 1px solid rgba(218, 238, 239, 0.25);
+        border-radius: 10px;
+        background: rgba(7, 13, 19, 0.86);
+        backdrop-filter: blur(12px);
+        pointer-events: none;
+      }
+      .eyebrow {
+        color: var(--cyan);
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .mission strong {
+        display: block;
+        margin-top: 3px;
+        font-size: 14.5px;
+      }
+      .mission p {
+        margin: 3px 0 0;
+        color: #bdc8cc;
+        font-size: 11.5px;
+        line-height: 1.35;
+      }
+      .mission .strategy-pill {
+        display: inline-block;
+        margin-top: 5px;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: rgba(85, 221, 213, 0.15);
+        border: 1px solid rgba(85, 221, 213, 0.35);
+        color: var(--cyan);
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .metrics {
+        position: absolute;
+        z-index: 4;
+        top: 12px;
+        right: 12px;
+        display: flex;
+        overflow: hidden;
+        border: 1px solid rgba(218, 238, 239, 0.2);
+        border-radius: 8px;
+        background: rgba(7, 13, 19, 0.82);
+        pointer-events: none;
+      }
+      .metrics span {
+        padding: 7px 10px;
+        color: var(--muted);
+        font-size: 9.5px;
+        border-right: 1px solid rgba(255, 255, 255, 0.09);
+        text-align: center;
+      }
+      .metrics span:last-child {
+        border: 0;
+      }
+      .metrics b {
+        display: block;
+        margin-top: 2px;
+        color: #fff;
+        font-size: 13.5px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #controls {
+        position: absolute;
+        z-index: 5;
+        left: 50%;
+        bottom: 12px;
+        display: grid;
+        grid-template-columns: repeat(5, 42px);
+        gap: 6px;
+        transform: translateX(-50%);
+        background: rgba(6, 10, 15, 0.7);
+        padding: 5px 8px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      }
+      .key {
+        height: 38px;
+        padding: 0;
+        font-size: 13px;
+        font-weight: 800;
+        border: 1px solid #334454;
+        border-bottom: 3px solid #1a2530;
+        border-radius: 7px;
+        color: #e2e8f0;
+        background: linear-gradient(180deg, #182330 0%, #0e1620 100%);
+        cursor: pointer;
+        touch-action: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        transition: all 0.08s ease;
+        user-select: none;
+      }
+      .key:hover {
+        border-color: var(--cyan);
+        color: #fff;
+        background: linear-gradient(180deg, #1f3340 0%, #12222d 100%);
+      }
+      .key:active,
+      .key.active {
+        border-color: var(--cyan);
+        border-bottom-width: 1px;
+        transform: translateY(2px);
+        background: #14353d;
+        box-shadow: 0 0 10px rgba(85, 221, 213, 0.35);
+        color: var(--cyan);
+      }
+      .key small {
+        display: block;
+        color: #7d909f;
+        font-size: 7.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-top: 1px;
+      }
+      .key.active small {
+        color: #a5f3fc;
+      }
+
+      #overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        text-align: center;
+        padding: 24px;
+        background: rgba(14, 17, 23, 0.84);
+        backdrop-filter: blur(4px);
+      }
+      #overlay.hidden {
+        display: none;
+      }
+      #overlay h2 {
+        margin: 0;
+        font-size: 22px;
+        color: #fff;
+      }
+      #overlay p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        max-width: 480px;
+        line-height: 1.5;
+      }
+      #overlay .big {
+        font-size: 64px;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--cyan);
+      }
+      #overlay button {
+        font: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        color: #070b10;
+        background: var(--cyan);
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 24px;
+        transition:
+          transform 0.12s,
+          box-shadow 0.12s;
+      }
+      #overlay button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(85, 221, 213, 0.4);
+      }
+      .spinner {
+        width: 28px;
+        height: 28px;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        border-top-color: var(--cyan);
+        border-radius: 50%;
+        animation: spin 0.85s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Body Signals Panel */
+      #signals {
+        display: grid;
+        gap: 5px;
+        padding: 8px 10px;
+        border-top: 1px solid var(--line);
+        background: #080e15;
+      }
+      .signal {
+        display: grid;
+        grid-template-columns: 60px minmax(50px, 1fr) 30px;
+        align-items: center;
+        gap: 6px;
+        color: #bbc7cb;
+        font-size: 10px;
+      }
+      .track {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 99px;
+        background: #1c2832;
+      }
+      .track i {
+        display: block;
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--orange), #ffd07a);
+        transition: width 0.09s linear;
+      }
+      .signal output {
+        color: var(--orange);
+        font-family: ui-monospace, monospace;
+        text-align: right;
+      }
+      #stats {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 7px;
+        border-radius: 5px;
+        background: rgba(13, 22, 31, 0.7);
+        border: 1px solid rgba(85, 221, 213, 0.2);
+        color: #94a3b8;
+        font-size: 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* HUD Overlays matching reference image */
+      .hud-top-header {
+        position: absolute;
+        top: 14px;
+        left: 16px;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #ffffff;
+        font-size: 15.5px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+        pointer-events: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .hud-top-header .brand-prefix {
+        color: #ffffff;
+        font-weight: 700;
+      }
+      .hud-top-header .level-name {
+        color: #cbd5e1;
+        font-weight: 500;
+      }
+      .hud-drive-badge {
+        position: absolute;
+        top: 44px;
+        left: 16px;
+        z-index: 6;
+        padding: 5px 13px;
+        border-radius: 6px;
+        background: rgba(8, 12, 16, 0.92);
+        border: 1px solid rgba(85, 221, 213, 0.4);
+        color: var(--cyan);
+        font-size: 12.5px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        transition: all 0.15s ease;
+      }
+      .hud-drive-badge.reverse {
+        background: rgba(230, 81, 0, 0.95);
+        border-color: #ff9e3d;
+        color: #fff;
+        box-shadow: 0 0 16px rgba(255, 158, 61, 0.5);
+      }
+      .hud-drive-badge.pushing {
+        background: rgba(16, 185, 129, 0.92);
+        border-color: #34d399;
+        color: #fff;
+      }
+      .hud-speedometer {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        z-index: 6;
+        color: #fff;
+        font-size: 16.5px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+        pointer-events: none;
+      }
+      .hud-attempt-elapsed {
+        position: absolute;
+        bottom: 14px;
+        left: 16px;
+        z-index: 6;
+        color: #e2e8f0;
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+        pointer-events: none;
+      }
+      .domain-tag {
+        color: #94a3b8;
+        font-size: 11.5px;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .gear-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
+        background: #15222e;
+        border: 1px solid var(--cyan);
+        color: var(--cyan);
+        font-size: 11.5px;
+        font-weight: 800;
+      }
+
+      /* TELEMETRY BAR (Full width bottom bar) */
+      #telemetry-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 36px;
+        min-height: 36px;
+        padding: 0 12px;
+        background: #000000;
+        border-top: 1px solid #1f2937;
+        color: #cbd5e1;
+        font-size: 11.5px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+        user-select: none;
+        z-index: 20;
+        width: 100%;
+        max-width: 100vw;
+        min-width: 0;
+        overflow-x: hidden;
+      }
+      .tele-left,
+      .tele-center,
+      .tele-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .tele-btn {
+        border: 1px solid #374151;
+        border-radius: 5px;
+        background: #111827;
+        color: #e5e7eb;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        cursor: pointer;
+        transition: all 0.12s ease;
+        white-space: nowrap;
+      }
+      .tele-btn:hover {
+        border-color: var(--cyan);
+        background: #1f2937;
+        color: #ffffff;
+      }
+      .tele-btn:active {
+        background: #374151;
+        transform: scale(0.97);
+      }
+      .tele-readout {
+        color: #9ca3af;
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+      .tele-readout b {
+        color: #ffffff;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Responsive layout */
+      @media (max-width: 1200px) {
+        #stats {
+          display: none;
+        }
+      }
+      @media (max-width: 960px) {
+        .brand p {
+          display: none;
+        }
+        #puzzle-select {
+          max-width: 140px;
+        }
+        .tele-center {
+          display: none;
+        }
+      }
+      @media (max-width: 780px) {
+        #workspace {
+          grid-template-columns: 1fr;
+          grid-template-rows: minmax(0, 1.2fr) minmax(0, 1fr);
+        }
+        #side-panel {
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: 1fr;
+        }
+        #brain-panel {
+          border-bottom: 0;
+          border-right: 1px solid var(--line);
+        }
+      }
+      @media (max-width: 580px) {
+        #side-panel {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 1fr;
+        }
+        #brain-panel {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "../shared/vendor/three/three.module.js",
+          "three/addons/controls/OrbitControls.js": "../shared/vendor/three/OrbitControls.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="stage">
+      <header id="topbar">
+        <div class="brand">
+          <div class="mark" id="speed-badge">1×</div>
+          <div>
+            <h1>Fly Parking Lab</h1>
+            <p>Carla · MaleCNS × NeuroMechFly v2</p>
+          </div>
+        </div>
+        <div class="topbar-center">
+          <div id="stats">-- fps · --× physics</div>
+          <div class="speed-group" id="speed-group">
+            <button
+              class="speed-btn active"
+              data-speed="1"
+              title="Normal speed (1×)"
+              style="white-space: nowrap !important; flex-shrink: 0 !important"
+            >
+              1× Normal
+            </button>
+            <button
+              class="speed-btn"
+              data-speed="4"
+              title="Fast speed (4×)"
+              style="white-space: nowrap !important; flex-shrink: 0 !important"
+            >
+              4× Fast
+            </button>
+            <button
+              class="speed-btn turbo"
+              data-speed="8"
+              title="Turbo speed (8×)"
+              style="white-space: nowrap !important; flex-shrink: 0 !important"
+            >
+              8× Turbo
+            </button>
+          </div>
+          <select id="puzzle-select" title="Select mission"></select>
+        </div>
+        <div class="actions">
+          <button id="auto-button">Autopilot: ON</button>
+          <button id="train-button" class="active-state" title="Continuous auto-learning mode">Training: ON</button>
+          <div class="batch-group" id="batch-group">
+            <select id="batch-select" title="Number of batch iterations">
+              <option value="10" selected>10 iter</option>
+              <option value="20">20 iter</option>
+              <option value="40">40 iter</option>
+              <option value="999999">Continuous ∞</option>
+            </select>
+            <button id="batch-toggle-btn" class="batch-btn">▶ Auto-Batch</button>
+            <button
+              id="burst-train-btn"
+              class="batch-btn"
+              style="
+                background: linear-gradient(135deg, rgba(234, 179, 8, 0.28), rgba(245, 158, 11, 0.42));
+                border-color: rgba(245, 158, 11, 0.6);
+                color: #fbbf24;
+                font-weight: 700;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+              "
+              title="Simulate iterations instantly in the background without waiting for 3D rendering"
+            >
+              ⚡ Burst Mode
+            </button>
+          </div>
+          <button id="pause-button">Pause</button>
+          <button id="reset-button">Reset</button>
+        </div>
+      </header>
+
+      <main id="workspace">
+        <!-- MAIN SIMULATION PANEL (LEFT) -->
+        <section class="panel" id="game-panel">
+          <div id="game-view">
+            <!-- Header & In-Sim HUD -->
+            <div class="hud-top-header">
+              <span class="brand-prefix">Carla | </span>
+              <span class="level-name" id="hud-level-name">parallel parking</span>
+            </div>
+            <div class="hud-drive-badge" id="hud-drive-badge">FORWARD</div>
+            <div class="hud-speedometer" id="hud-speedometer">0.0 km/h</div>
+            <div class="hud-attempt-elapsed" id="hud-attempt-elapsed">Attempt 1 · 0.0s elapsed</div>
+
+            <div class="mission" style="display: none">
+              <span class="eyebrow">Mission</span>
+              <strong id="mission-title">Drive the Mini Car</strong>
+              <p id="mission-desc">
+                Carla drives the mini car from the cockpit through urban road circuits to the target parking bay.
+              </p>
+              <span class="strategy-pill" id="strategy">Plan: initializing trajectory</span>
+            </div>
+
+            <div class="metrics" style="display: none">
+              <span>Time<b id="timer">0.00</b></span>
+              <span>Hits<b id="touches">0</b></span>
+              <span>Best<b id="best">—</b></span>
+            </div>
+
+            <div id="controls">
+              <button class="key" data-key="a">A<small>left</small></button>
+              <button class="key" data-key="w">W<small>drive</small></button>
+              <button class="key" data-key="s">S<small>reverse</small></button>
+              <button class="key" data-key="d">D<small>right</small></button>
+              <button class="key" data-key="q">Q<small>brake</small></button>
+            </div>
+
+            <div id="overlay">
+              <div class="spinner"></div>
+              <p id="overlay-msg">Loading MuJoCo and Carla…</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT SIDEBAR (32%): 3D BRAIN (TOP) + COCKPIT (BOTTOM) -->
+        <aside id="side-panel">
+          <!-- TOP PANEL: 3D BRAIN · MALECNS -->
+          <div class="panel" id="brain-panel">
+            <div class="panel-head">
+              <h2>Carla's Brain</h2>
+              <span class="domain-tag">MaleCNS Connectome</span>
+            </div>
+            <div id="brain-view">
+              <span class="body-label">3D Neural Network · Drag to orbit</span>
+              <div id="brain-hover-card" class="brain-hover-card hidden">
+                <strong id="bhc-name">-</strong>
+                <span id="bhc-type">-</span>
+                <p id="bhc-desc">-</p>
+              </div>
+            </div>
+            <div id="brain-footer">
+              <div class="brain-metrics">
+                <div class="bm-stat"><span>Attempt</span><b id="train-episode">1</b></div>
+                <div class="bm-stat"><span>Reward</span><b id="train-reward">+0.0</b></div>
+                <div class="bm-stat">
+                  <span>Plasticity</span><b id="train-plasticity" style="color: var(--cyan)">Adaptive</b>
+                </div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 3px;
+                  background: rgba(0, 0, 0, 0.4);
+                  padding: 5px 8px;
+                  border-radius: 6px;
+                  border: 1px solid rgba(85, 221, 213, 0.18);
+                "
+              >
+                <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted)">
+                  <span>Reward Trend</span>
+                  <span id="sparkline-trend" style="color: var(--cyan); font-weight: 700">+0.0</span>
+                </div>
+                <canvas id="reward-sparkline" width="220" height="34" style="width: 100%; height: 34px"></canvas>
+              </div>
+              <div id="batch-hud" class="batch-hud hidden">
+                <div class="batch-row">
+                  <span>Sandbox Batch: <strong id="batch-iter-count">0 / 20</strong></span>
+                  <span id="batch-status-text" class="batch-status-text">Ready</span>
+                </div>
+                <label class="batch-checkbox">
+                  <input type="checkbox" id="check-pause-success" />
+                  <span>Pause on mission complete</span>
+                </label>
+                <label class="batch-checkbox" style="margin-top: 2px">
+                  <input type="checkbox" id="check-domain-rand" />
+                  <span>Domain Randomization (robustness)</span>
+                </label>
+                <button
+                  id="batch-resume-btn"
+                  style="
+                    display: none;
+                    margin-top: 6px;
+                    width: 100%;
+                    padding: 6px 12px;
+                    background: linear-gradient(135deg, rgba(85, 221, 213, 0.25), rgba(85, 221, 213, 0.45));
+                    border: 1px solid var(--cyan);
+                    color: #fff;
+                    font-weight: 700;
+                    border-radius: 6px;
+                    font-size: 11.5px;
+                    cursor: pointer;
+                    text-align: center;
+                  "
+                >
+                  ▶ Resume Batch
+                </button>
+              </div>
+              <div class="brain-actions" style="margin-top: 3px">
+                <button
+                  id="burst-train-panel-btn"
+                  style="
+                    background: linear-gradient(135deg, rgba(234, 179, 8, 0.22), rgba(245, 158, 11, 0.35));
+                    border-color: rgba(245, 158, 11, 0.5);
+                    color: #fbbf24;
+                    font-weight: 700;
+                    white-space: nowrap !important;
+                  "
+                >
+                  ⚡ Quick Burst
+                </button>
+                <button id="next-puzzle-btn">Next Mission ▶</button>
+                <button id="reset-learning-btn">Reset Weights</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTTOM PANEL: COCKPIT (WHEEL · PEDALS · GEAR) -->
+          <div class="panel" id="body-panel">
+            <div class="panel-head">
+              <h2>Cockpit View (Carla)</h2>
+              <span class="gear-badge" id="gear-indicator">D</span>
+            </div>
+            <div id="body-view">
+              <span class="body-label">Carla at the Wheel · Live Steering & Pedals</span>
+            </div>
+            <div id="signals">
+              <div id="neural-activity" style="display: none">
+                <div class="neuron" data-neuron="mdn">
+                  <span>MDN</span><i><b></b></i><output>0.00</output>
+                </div>
+                <div class="neuron" data-neuron="turn">
+                  <span>DN Turn</span><i><b></b></i><output>0.00</output>
+                </div>
+                <div class="neuron" data-neuron="left">
+                  <span>Left CPG</span><i><b></b></i><output>0.00</output>
+                </div>
+                <div class="neuron" data-neuron="right">
+                  <span>Right CPG</span><i><b></b></i><output>0.00</output>
+                </div>
+                <div class="neuron" data-neuron="contact">
+                  <span>Contact</span><i><b></b></i><output>0.00</output>
+                </div>
+              </div>
+              <div class="signal">
+                <span>Throttle</span>
+                <div class="track"><i id="bar-forward"></i></div>
+                <output id="value-forward">0.00</output>
+              </div>
+              <div class="signal">
+                <span>Steering</span>
+                <div class="track"><i id="bar-turn"></i></div>
+                <output id="value-turn">0.00</output>
+              </div>
+              <div class="signal">
+                <span>Brake / MDN</span>
+                <div class="track"><i id="bar-mdn"></i></div>
+                <output id="value-mdn">0.00</output>
+              </div>
+              <div class="signal" style="display: none">
+                <span>Contact</span>
+                <div class="track"><i id="bar-contact"></i></div>
+                <output id="value-contact">0.00</output>
+              </div>
+              <div class="signal" style="display: none">
+                <span>CPG</span>
+                <div class="track"><i id="bar-cpg"></i></div>
+                <output id="value-cpg">0.00</output>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <!-- LOWER TELEMETRY BAR -->
+      <footer id="telemetry-bar">
+        <div class="tele-left">
+          <button id="btn-req-left" class="tele-btn">Request left</button>
+          <button id="btn-req-right" class="tele-btn">Request right</button>
+          <span class="tele-readout">Target <b id="tele-target">0.0°</b></span>
+        </div>
+        <div class="tele-center">
+          <span class="tele-readout">Gas <b id="tele-gas">0%</b> &nbsp; Brake <b id="tele-brake">0%</b></span>
+        </div>
+        <div class="tele-right">
+          <span class="tele-readout">Wheel <b id="tele-wheel">0.0°</b> &nbsp; Steer <b id="tele-steer">0.000</b></span>
+        </div>
+      </footer>
+    </div>
+    <script type="module" src="./game.js?v=4.96"></script>
+  </body>
+</html>

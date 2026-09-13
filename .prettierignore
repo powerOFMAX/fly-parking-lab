@@ -1,0 +1,15 @@
+.next
+dist
+build
+out
+node_modules
+.wrangler
+vendor
+drizzle
+package-lock.json
+public/nmf/shared/vendor
+public/nmf/game/assets
+*.svg
+next-env.d.ts
+cloudflare-env.d.ts
+

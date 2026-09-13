@@ -1,0 +1,44 @@
+# Dependencies
+/node_modules
+.pnp
+.pnp.js
+
+# Production and build outputs
+dist/
+build/
+.next/
+out/
+.vinext/
+
+# Runtime and local services
+.openai/
+.sites-runtime/
+.wrangler/
+.turbo/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Temp and artifacts
+.tempmediaStorage/
