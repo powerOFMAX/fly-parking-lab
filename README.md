@@ -2,6 +2,10 @@
 
 In-browser 3D bio-robotic simulation featuring **Carla**, a fruit fly (_Drosophila melanogaster_) that drives a classic Mini Cooper using the official **NeuroMechFly v2** biomechanical model coupled to the **MaleCNS** neural connectome and the **MuJoCo** rigid-body physics engine executed via WebAssembly.
 
+<p align="center">
+  <img src="demo.gif" alt="Fly Parking Lab · Carla driving a Mini Cooper via NeuroMechFly v2" width="100%" />
+</p>
+
 ---
 
 ## System Architecture
