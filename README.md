@@ -4,6 +4,67 @@ In-browser 3D bio-robotic simulation featuring **Carla**, a fruit fly (_Drosophi
 
 ---
 
+## System Architecture
+
+The simulation operates as a high-frequency closed-loop cyber-physical system, bridging sensory neurobiology, neural network dynamics, analytical limb inverse kinematics, and non-holonomic vehicle physics:
+
+```mermaid
+flowchart TD
+  subgraph Sensation["1. Perception & Sensing"]
+    Lidar["5-Ray 3D LiDAR Sensors<br/>(-60°, -30°, 0°, +30°, +60°)"]
+    Antenna["Antennal Chemical Gradient<br/>(Target Parking Beacon)"]
+    Touch["Mechanoreceptors<br/>(Chassis Haptics & Contact)"]
+  end
+
+  subgraph Connectome["2. MaleCNS Neural Connectome"]
+    Lidar --> Optic["Optical Neurons<br/>(visual_left / visual_right)"]
+    Antenna --> Odor["Antennal Receptor"]
+    Touch --> Mechanosensory["Tactile Feedback"]
+
+    Optic --> BrainCore["Cephalic & Thoracic Network<br/>(Synaptic Plasticity & Learning)"]
+    Odor --> BrainCore
+    Mechanosensory --> BrainCore
+
+    BrainCore --> CPG["Central Pattern Generator (CPG)<br/>(Tripod Locomotion Coordination)"]
+    BrainCore --> MDN["MDN Moonwalker Descending Neurons<br/>(Reverse Reflex & Unstuck Maneuver)"]
+  end
+
+  subgraph Cockpit["3. Biomechanical Cockpit IK Rig"]
+    CPG --> Legs["Carla's Limbs (NeuroMechFly v2)<br/>Analytical 2-Bone Closed-Form IK"]
+    MDN --> Legs
+    Legs --> Wheel["Steering Wheel (Forelegs Grip)<br/>Sub-millimeter Dynamic Rotation"]
+    Legs --> Pedals["Reactive Pedals (Midlegs Flexion)<br/>Green Throttle & Red Brake Feedback"]
+  end
+
+  subgraph Vehicle["4. Non-Holonomic Vehicle Dynamics"]
+    Wheel --> SteerAngle["Steering Angle (delta)<br/>Ackermann Front Wheel Pivots"]
+    Pedals --> Traction["Longitudinal Drive (ds)<br/>ds = flyDelta·cos(theta) + flyDelta·sin(theta)"]
+    SteerAngle --> Yaw["Angular Heading (dTheta)<br/>dTheta = (ds / L) * tan(delta)"]
+    Traction --> Yaw
+    Yaw --> Arc["Circular Midpoint Arc Integration<br/>Zero Lateral Slip (No Sideways Crabbing)"]
+  end
+
+  subgraph Physics["5. MuJoCo Physics & Environment"]
+    Arc --> MjStep["MuJoCo WebAssembly Engine<br/>Adaptive 60 FPS Substepping (dt = 0.002s)"]
+    MjStep --> Collision["Continuous Sliding Collision Resolver<br/>Obstacles, Curbs & Roadworks"]
+  end
+
+  subgraph Visualization["6. Synchronized 3D Dual Viewport"]
+    Collision --> Arena["Main Urban Driving Arena (68%)<br/>Three.js Mini Cooper, Obstacles & Track"]
+    Collision --> Sidebar["Brain & Cockpit Sidebar (32%)<br/>Live MaleCNS Connectome & IK View"]
+    Arena -.->|"Visual & Proximity Field"| Lidar
+  end
+
+  style Sensation fill:#162438,stroke:#42d5d0,stroke-width:2px,color:#fff
+  style Connectome fill:#231a3d,stroke:#bf77ff,stroke-width:2px,color:#fff
+  style Cockpit fill:#1b2d24,stroke:#55e08b,stroke-width:2px,color:#fff
+  style Vehicle fill:#362615,stroke:#ffaa44,stroke-width:2px,color:#fff
+  style Physics fill:#2d1b1b,stroke:#ff6b6b,stroke-width:2px,color:#fff
+  style Visualization fill:#182230,stroke:#49a7ff,stroke-width:2px,color:#fff
+```
+
+---
+
 ## Getting Started
 
 ```bash
@@ -60,20 +121,22 @@ The experience is divided into a primary driving arena and a synchronized sideba
 
 ## Realistic Urban Mission Catalog
 
-Switch between 6 urban road missions using the topbar selector:
+The simulation includes 6 realistic urban driving and parking missions selectable from the top navigation bar:
 
-1. **Parallel Parking (`parallel parking`):** Wide avenue maneuver to dock into a curb-side slot between two parked cars.
-2. **Perpendicular Parking (`perpendicular parking`):** Commercial lot maneuver pulling into a 90° bay between a pickup and a hatchback.
-3. **Roadworks Slalom (`roadworks slalom`):** Roadway with traffic cones to smoothly slalom through caution markers.
-4. **Alley Loading (`alley loading`):** Evade a delivery van and dumpsters to dock securely into the loading bay.
-5. **Urban Roundabout (`urban roundabout`):** Continuous navigation through a roundabout ring with a central landscaped island and technical exit.
-6. **T-Junction Maneuver (`t-junction maneuver`):** Technical intersection negotiating cross-traffic with a north detour and return parking bay.
+| #     | Mission                   | Difficulty | Maneuver Type          | Objective & Hazards                                                                                                        |
+| :---- | :------------------------ | :--------- | :--------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| **1** | **Parallel Parking**      | Challenge  | `street_parallel`      | Wide avenue maneuver docking into a curb-side slot between two parked vehicles (Coral Mini & Grey Sedan).                  |
+| **2** | **Perpendicular Parking** | Technical  | `street_perpendicular` | Commercial lot maneuver executing a sharp 90° turn into a narrow bay between an Urban Pickup and Blue Hatchback.           |
+| **3** | **Roadworks Slalom**      | Skill      | `street_slalom`        | High-speed navigation weaving smoothly around 3 reflective highway traffic pylons along a 22m avenue to reach the end bay. |
+| **4** | **Alley Loading Bay**     | Expert     | `street_alley`         | Narrow industrial corridor evading a delivery van and dumpster to dock securely into the loading bay.                      |
+| **5** | **Urban Roundabout**      | Advanced   | `street_roundabout`    | Continuous curved navigation orbiting a central landscaped rotary island with technical deceleration and exit docking.     |
+| **6** | **T-Junction Maneuver**   | Master     | `street_tjunction`     | Complex 3-way intersection negotiating cross-traffic, executing a northern detour, and returning to the parking bay.       |
 
 ---
 
 ## Vehicle Physics and Ackermann Kinematics
 
-Vehicle movement strictly follows the **non-holonomic bicycle model**:
+Vehicle movement strictly follows the **non-holonomic bicycle model** with continuous sliding collision resolution:
 
 1. **Pure longitudinal traction:**
    $$ds = \Delta x \cos(\theta) + \Delta y \sin(\theta)$$
@@ -82,22 +145,51 @@ Vehicle movement strictly follows the **non-holonomic bicycle model**:
    $$d\theta = \frac{ds}{L} \tan(\delta) \quad \text{with } L = 1.45\text{ m}$$
    If the car is stationary ($ds = 0$), chassis yaw cannot rotate ($d\theta \equiv 0$). Front wheels pivot with the steering wheel, but the chassis remains anchored.
 3. **Circular arc integration:**
-   Position updates across the midpoint arc angle ($x \mathrel{+}= ds \cos(\theta_{mid})$, $y \mathrel{+}= ds \sin(\theta_{mid})$), preventing jerkiness through tight curves.
+   Position updates across the midpoint arc angle ($x \mathrel{+}= ds \cos(\theta_{mid})$, $y \mathrel{+}= ds \sin(\theta_{mid})$), preventing trajectory discretization errors through tight curves.
+4. **Continuous Sliding Collision Resolver:**
+   Tangential sliding allows smooth gliding along obstacles, curbs, and boundaries without rigid sticking or clipping.
+
+---
+
+## Repository Structure
+
+```
+web3d/
+├── public/
+│   └── nmf/
+│       ├── game/
+│       │   ├── game.html             # High-performance HUD, telemetry & dual viewports
+│       │   ├── game.js               # Biomechanical loop, MuJoCo WASM, Three.js & IK
+│       │   └── autopilot.mjs         # Non-holonomic planner, missions & collision math
+│       ├── models/                   # NeuroMechFly v2 meshes, fly kinematics & textures
+│       ├── connectome/               # MaleCNS v1.0 neural graph & synaptic weight data
+│       └── wasm/                     # MuJoCo physics engine compiled to WebAssembly
+├── src/                              # React / Next.js web application wrapper
+├── tests/                            # Comprehensive Node.js unit & integration tests
+│   └── parking-autopilot.test.mjs    # 26 automated unit & mission tests
+├── scripts/                          # CI & integrity audit suite
+│   └── check-integrity.mjs           # 5 invariant guards (kinematics, HUD, viewports)
+├── package.json                      # Build scripts, toolchain & dependencies
+└── README.md                         # Technical documentation, architecture & guide
+```
 
 ---
 
 ## Integrity Guards and Verification
 
-The project includes strict invariant audits to guard against physics, camera, or UI regressions:
+The project includes strict automated tests and invariant audits to guard against regressions in physics, camera framing, or UI telemetry:
 
 ```bash
-# Run unit test suite and integrity invariant audit
+# Run unit test suite (26 passing tests)
 npm test
 
-# Run code and physics integrity checks directly
+# Run code, physics, and invariant integrity checks directly
 node scripts/check-integrity.mjs
 
-# Production build verification
+# Run full project verification (lint, format, test, integrity)
+npm run check
+
+# Verify production build
 npm run build
 ```
 
@@ -107,13 +199,15 @@ npm run build
 
 Toggle between autonomy and manual keyboard control with the `Autopilot: ON/OFF` button:
 
-- `W`: Accelerate / Drive forward
-- `S`: Reverse / Brake
-- `A`: Steer left
-- `D`: Steer right
-- `Q`: Emergency stop / Brake
-- `Space`: Restart current attempt / Pause
-- `+` / `-` / `t`: Increase, decrease, or cycle simulation speed (1× Normal, 4× Fast, 8× Turbo)
+| Key             | Action                                                                                |
+| :-------------- | :------------------------------------------------------------------------------------ |
+| `W`             | Accelerate / Drive forward                                                            |
+| `S`             | Reverse / Brake                                                                       |
+| `A`             | Steer left                                                                            |
+| `D`             | Steer right                                                                           |
+| `Q`             | Emergency stop / Brake                                                                |
+| `Space`         | Restart current attempt / Pause                                                       |
+| `+` / `-` / `t` | Increase, decrease, or cycle simulation speed (1× Normal, 4× Fast, 8× Turbo, 16× Max) |
 
 ---
 

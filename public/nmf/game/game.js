@@ -1082,7 +1082,7 @@ class Game {
     this._stepper = makeStepper(this.dt, MAX_SUBSTEPS);
     this._statsMeter = makeStatsMeter(this.dt, ({ fps, rtf }) => {
       const mult = Math.max(1, Math.round(rtf / BASE_PLAYBACK_SPEED));
-      document.getElementById('stats').innerHTML = `${fps.toFixed(0)} fps · ${mult}× (${rtf.toFixed(2)}× física)`;
+      document.getElementById('stats').innerHTML = `${fps.toFixed(0)} fps · ${mult}× (${rtf.toFixed(2)}× physics)`;
     });
 
     this._buildScene();
